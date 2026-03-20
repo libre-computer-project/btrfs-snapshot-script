@@ -120,31 +120,34 @@ for snap in "${all_snapshots[@]}"; do
 	age_days=$(( (today_epoch - snap_epoch) / 86400 ))
 
 	if [ "$age_days" -le "$DAILY_DAYS" ]; then
-		# Daily tier: keep all
 		keep+=("$snap")
+		echo "  KEEP  $name  ${age_days}d  [daily]"
 	elif [ "$age_days" -le "$WEEKLY_DAYS" ]; then
-		# Weekly tier: keep if 7+ days since last kept weekly snapshot
 		if [ $(( snap_epoch - last_kept_weekly_epoch )) -ge $((7 * 86400)) ]; then
 			keep+=("$snap")
 			last_kept_weekly_epoch=$snap_epoch
+			echo "  KEEP  $name  ${age_days}d  [weekly]"
 		else
 			delete+=("$snap")
+			echo "  DROP  $name  ${age_days}d  [weekly: <7d since last kept]"
 		fi
 	elif [ "$age_days" -le "$MONTHLY_DAYS" ]; then
-		# Monthly tier: keep one per calendar month
 		if [ "$snap_month" != "$last_kept_monthly" ]; then
 			keep+=("$snap")
 			last_kept_monthly="$snap_month"
+			echo "  KEEP  $name  ${age_days}d  [monthly: first in ${date_str:0:4}-${date_str:4:2}]"
 		else
 			delete+=("$snap")
+			echo "  DROP  $name  ${age_days}d  [monthly: dup ${date_str:0:4}-${date_str:4:2}]"
 		fi
 	else
-		# Annual tier: keep one per calendar year
 		if [ "$snap_year" != "$last_kept_annual" ]; then
 			keep+=("$snap")
 			last_kept_annual="$snap_year"
+			echo "  KEEP  $name  ${age_days}d  [annual: first in $snap_year]"
 		else
 			delete+=("$snap")
+			echo "  DROP  $name  ${age_days}d  [annual: dup $snap_year]"
 		fi
 	fi
 done
